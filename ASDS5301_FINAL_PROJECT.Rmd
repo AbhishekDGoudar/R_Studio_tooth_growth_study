@@ -1,0 +1,238 @@
+---
+title: "ASDS5301_FINAL_PROJECT"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+date: "2023-12-06"
+---
+# TWO WAY ANOVA TEST
+
+## Team 5
+## Abhishek Goudar (1001916610)
+## JeyaSooriya Sarvanan (1002186838)
+
+
+
+
+```{r}
+df_tooth_growth <- data.frame(ToothGrowth)
+
+# Structure of the dataset
+str(df_tooth_growth)
+
+head(df_tooth_growth[c(28, 29, 30, 31, 32, 33), ], 
+     n = 6)
+```
+```{r}
+##Dataset summary
+
+summary(df_tooth_growth)
+```
+```{r}
+
+##Descriptive stats in conjunction to both factors
+require(dplyr)
+library(dplyr)
+group_by(df_tooth_growth, supp, dose) %>%
+  summarise(
+    count = n(),
+    mean = mean(len, na.rm = TRUE),
+    sd = sd(len, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+```{r}
+
+## Boxplot for Delivery Methods of Supplement
+par(mar = c(5, 5, 2, 5))
+boxplot(len~supp, data=df_tooth_growth, 
+        notch=FALSE, 
+  col=(c("lightcoral","lightgreen")),
+  main="Delivery Methods for Vitamin C Supplements",
+  xlab="Supplement Type (Asorbic Acid/Orange Juice)",
+  ylab="Length of Odontoblast (Microns)",
+  width = c(0.5, 1.5)*2, 
+  height = c(0.5, 1.5)
+)
+
+```
+
+```{r}
+boxplot(len~dose, data=df_tooth_growth, notch=FALSE, 
+  col=(c("lightcoral","lightgreen")),
+  main="Three Dose Levels of Vitamin C (0.5, 1, and 2)",
+  xlab="Numeric Dose in milligrams/day",
+  ylab="Length of Odontoblast (Microns)"
+  )
+
+
+```
+
+```{r}
+boxplot(len~supp*dose, data=df_tooth_growth, notch=FALSE, 
+  col=(c("lightcoral","lightgreen")),
+  main="Odontoblast Growth",
+  xlab="Suppliment and Dose",
+  ylab="Length of Odontoblast (Microns)")
+```
+
+```{r}
+require(ggplot2)
+require(dplyr)
+library(ggplot2)
+library(dplyr) 
+
+# Convert the 'supp' and 'dose' variables to factors
+df_tooth_growth$supp <- as.factor(df_tooth_growth$supp)
+df_tooth_growth$dose <- as.factor(df_tooth_growth$dose)
+
+
+```
+
+```{r}
+par(mar = c(8, 8, 2, 8))
+
+# Interaction Plot
+interaction.plot(df_tooth_growth$dose, df_tooth_growth$supp, 
+                 df_tooth_growth$len, 
+                 col = c("lightcoral", "lightgreen"), 
+                 type = "b", fixed = TRUE, 
+                 xlab = "Dose (milligrams/day)", 
+                 ylab = "Length of Odontoblast (Microns)", 
+                 pch = 19, leg.bty = "o")
+
+```
+```{r}
+
+# Main Effects Plot for 'dose'
+ggplot(df_tooth_growth, aes(x = dose, y = len, group = supp, color = supp)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Main Effects Plot for Dose", 
+       x = "Dose (milligrams/day)", y = "Length of Odontoblast (Microns)") +
+  scale_color_manual(values = c("lightcoral", "lightgreen")
+                     ) +  # Set custom colors
+  theme_minimal()
+
+```
+```{r}
+
+means_data <- df_tooth_growth %>%
+  group_by(supp, dose) %>%
+  summarize(mean_len = mean(len),
+            .groups="drop")
+
+# Line plot of means
+ggplot(means_data, aes(x = dose, y = mean_len, group = supp, color = supp)) +
+  geom_line() +
+  geom_point(size = 3) +
+  labs(title = "Mean Odontoblast Length for Each Supplement vs Dose",
+       x = "Dose (milligrams/day)", y = "Mean Odontoblast Length (Microns)") +
+  scale_color_manual(values = c("lightcoral", "lightgreen")
+                     ) +  # Set custom colors
+  theme_minimal()
+```
+
+
+```{r}
+# Main Effects Plot for 'supp' 
+ggplot(df_tooth_growth, aes(x = supp, y = len, group = dose, color = dose)) +
+  geom_boxplot() +
+  geom_point(position = position_dodge(width = 0.75), size = 2) +
+  labs(title = "Main Effects Plot for Supplement", x = "Supplement", 
+       y = "Mean Odontoblast Length (Microns)") +
+  scale_color_manual(values = c("lightcoral", "lightgreen", "blue")
+                     ) +  # Set custom colors
+  theme_minimal()
+
+```
+
+
+Null Hypothesis: 
+
+Alternate Hypothesis:
+
+Test for Assumptions:
+
+1. Shapiro-Wilk normality test to check for Normality:
+
+Null Hypothesis (H0): The data in the sample is normally distributed.
+
+Alternative Hypothesis (Ha): The data in the sample is not normally distributed.
+
+Used the below code to test for the Normality which is Shapiro.Test.
+Taken alpha = 0.05
+
+```{r}
+shapiro.test(df_tooth_growth$len)
+```
+
+```{r}
+qqnorm(df_tooth_growth$len)
+qqline(df_tooth_growth$len, col = "red")
+```
+2.Homogeneity of variance Test
+```{r}
+require(car)
+library(car)
+# Levene test for Interaction Term
+#levels(ToothGrowth$supp)
+# Convert 'dose' to a factor with specific levels
+df_tooth_growth$dose <- factor(df_tooth_growth$dose, levels = c("0.5", "1", "2"))
+
+# Perform Levene test
+leveneTest(len ~ supp * dose, data = df_tooth_growth)
+
+# Levene test for factor1
+leveneTest(len ~ supp, data = df_tooth_growth)
+
+# Levene test for factor2
+leveneTest(len ~ dose, data = df_tooth_growth)
+```
+
+3. Independence 
+```{r}
+
+# Create a contingency table
+contingency_table <- table(df_tooth_growth$supp, df_tooth_growth$dose)
+
+# Conduct Chi-squared test for independence
+chi_squared_test <- chisq.test(contingency_table)
+
+# Print the results
+print(chi_squared_test)
+
+```
+Since the Sample contains different categories within the corresponding features, we can confirm that the these features are independent of each other.
+
+
+
+
+```{r}
+two_way_anova <- aov(len ~ supp * factor(dose), data = df_tooth_growth)
+```
+
+```{r}
+summary(two_way_anova)
+```
+
+```{r}
+TukeyHSD(two_way_anova)
+```
+
+```{r}
+plot(TukeyHSD(two_way_anova))
+
+```
+```{r}
+require(rstatix)
+library(rstatix)
+
+eta_squared(two_way_anova)
+
+
+partial_eta_squared(two_way_anova)
+```
